@@ -5,4 +5,5 @@ import( mvbutils)
 import( offarray)
 import( RTMB)
 S3method( "reclasso", "advector")
+S3method( "sumover", "advector")
 

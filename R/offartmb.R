@@ -117,10 +117,9 @@ return( res)
 
 
 "reclasso.advector" <-
-function( 
-  expr, 
-  by
-){
+function( expr, by){
+scatn( 'reclasso for advector')
+
   # Fix +,-,*,/,atan2, and any user-defined additions:
   # see .onLoad for default list
   expr <- do.call( 'substitute', list( substitute( expr), overloads$repops))
@@ -181,5 +180,18 @@ function(
   
 # eval.parent( expr)
   eval( expr, parent.frame()) # for debugging
+}
+
+
+"sumover.advector" <-
+function( x, mm, drop=FALSE){
+  # Very similar to default, but don't use fast .colSums/.rowSums
+  # since those don't work for advectors
+  bod <- body( offarray:::sumover.default)
+  bod <- do.call( 'substitute', list( bod, list( 
+    .colSums= function( x, m, n){ dim( x) <- c( m, n); colSums( x)},
+    .rowSums= function( x, m, n){ dim( x) <- c( m, n); rowSums( x)}
+  )))
+eval( bod)
 }
 
