@@ -118,7 +118,7 @@ return( res)
 
 "reclasso.advector" <-
 function( expr, by){
-scatn( 'reclasso for advector')
+# scatn( 'reclasso for advector')
 
   # Fix +,-,*,/,atan2, and any user-defined additions:
   # see .onLoad for default list
@@ -162,16 +162,6 @@ scatn( 'reclasso for advector')
         ret
       })
     
-      if( FALSE){ 
-              newbod <- substitute( { 
-                  ret <- oldbod;
-                  ioff <- match( 'offarray', oldClass( ret), 0);
-                  if( ioff){
-                    oldClass( ret) <- c( 'offarray', oldClass( ret)[ -ioff])
-                  }
-                  ret
-                }, list( oldbod= body( oldsuba)))
-      }
       attr( newbod, 'I_have_been_replaced') <- TRUE
       body( newsuba) <- newbod
       assign( '[<-', newsuba, ff)

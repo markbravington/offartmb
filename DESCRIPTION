@@ -1,6 +1,6 @@
 Package: offartmb
 Title: Use offarray code with RTMB
-Version: 1.0.18
+Version: 1.0.19
 Description: Helper functions to allow offarray code to work directly under RTMB
 Author: Mark Bravington <markb2@summerinsouth.net>
 Maintainer: Mark Bravington <markb2@summerinsouth.net>
