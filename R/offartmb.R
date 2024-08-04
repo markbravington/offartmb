@@ -174,14 +174,21 @@ function( expr, by){
 
 
 "sumover.advector" <-
-function( x, mm, drop=FALSE){
-  # Very similar to default, but don't use fast .colSums/.rowSums
-  # since those don't work for advectors
-  bod <- body( offarray:::sumover.default)
-  bod <- do.call( 'substitute', list( bod, list( 
-    .colSums= function( x, m, n){ dim( x) <- c( m, n); colSums( x)},
-    .rowSums= function( x, m, n){ dim( x) <- c( m, n); rowSums( x)}
-  )))
-eval( bod)
+function( x, mm, drop=FALSE) {
+## This avoids trying to condense dims & then call .colSums/.rowSums,
+## which only apply to numerics
+## so it might be a bit slower, but at least it might work
+## NB colSums.advector uses apply
+ 
+  if( is.character( mm)){
+    mm <- match( mm, c( names( dim( x)), names( dimnames( x))), 0) # one will work...
+  }
+  ds <- dimseq( x)
+  
+  y <- apply( as.array( x, make_dimnames=FALSE), seq_along( dim( x))[-mm], sum)
+  
+  # ?drop-stuff goes here?
+
+return( offarray( y, dimseq=ds[ -mm]))
 }
 
