@@ -117,13 +117,14 @@ return( res)
 
 
 "reclasso.advector" <-
-function( expr, by){
+function( expr, by, evalfr=parent.frame()){
+## evalfr in case this gets invoked indirectly, by reclasso.list
+  
 # scatn( 'reclasso for advector')
-
   # Fix +,-,*,/,atan2, and any user-defined additions:
   # see .onLoad for default list
-  expr <- do.call( 'substitute', list( substitute( expr), overloads$repops))
-  
+  expr <- do.call( 'substitute', list( expr, overloads$repops))
+
   # or if I had the user-tweakable version in place
 
 
@@ -168,8 +169,7 @@ function( expr, by){
     } # if subass not re-replaced yet
   } # if need to re-replace subassignment
   
-# eval.parent( expr)
-  eval( expr, parent.frame()) # for debugging
+  eval( expr, evalfr)
 }
 
 
