@@ -117,7 +117,7 @@ return( res)
 
 
 "reclasso.advector" <-
-function( expr, by, evalfr=parent.frame()){
+function( expr, by, evalfr=parent.frame(), ...){
 ## evalfr in case this gets invoked indirectly, by reclasso.list
   
 # scatn( 'reclasso for advector')
