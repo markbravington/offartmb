@@ -118,12 +118,28 @@ return( res)
 
 "reclasso.advector" <-
 function( expr, by, evalfr=parent.frame(), ...){
+## Replace calls in expr to +,-,*,/,atan2, and any user-defined additions with 
+## calls to offarray-compatible equivs (that will still honour advector)
+## see .onLoad for default list
 ## evalfr in case this gets invoked indirectly, by reclasso.list
+
+  r"--{
+  Want this:
   
-# scatn( 'reclasso for advector')
-  # Fix +,-,*,/,atan2, and any user-defined additions:
-  # see .onLoad for default list
   expr <- do.call( 'substitute', list( expr, overloads$repops))
+  This used to work (at some point with R4.4, and various package versions), and still should but doesn't. It's R bugs, probably due to the bloody byte compiler again. It usually leads to errors like this:
+  
+  Error in `[<-.default`(x, ..., value = value) : subscript out of bounds
+  
+  Or sometimes reclasso wouldn't work at all (ie would not replace operators), leading to warnings about "Incompatible methods" which are terminal in this context.
+
+  Hence, do it manually:
+  }--"
+
+  subcall <- quote( substitute( x, y))
+  subcall[[2]] <- substitute( expr)
+  subcall[[3]] <- overloads$repops
+  expr <- eval( subcall) 
 
   # or if I had the user-tweakable version in place
 

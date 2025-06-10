@@ -1,0 +1,2 @@
+1.0.30: Fixed 'reclasso.advector' to squash the mysterious re-appearance of a bug (possibly related to R's damned byte-compiler). Basically, 'do.call("substitute")' has stopped working. The docu for 'do.call' includes this gem: "The behavior of some functions, such as substitute, will not be the same for functions evaluated using do.call as if they were evaluated from the interpreter. The precise semantics are currently undefined and subject to change." I've worked round it by setting up direct call to 'substitute', then evaluating the call. So far so good.
+
