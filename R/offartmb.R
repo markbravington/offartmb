@@ -1,5 +1,87 @@
 # This is package offartmb 
 
+".eval" <-
+function( expr, ...){
+  mc <- match.call( expand.dots=TRUE)
+
+  # Inside 'reclasso', don't evaluate and don't call substititute( expr):
+  mc$expr <- reclasso.advector( expr, .sub=FALSE)
+  mc[[1]] <- quote( eval)
+eval.parent( mc)
+}
+
+
+".eval.parent" <-
+function( expr, ...){
+  mc <- match.call( expand.dots=TRUE)
+  
+  # Inside 'reclasso', don't evaluate and don't call substititute( expr):
+  mc$expr <- reclasso.advector( expr, .sub=FALSE)  
+  mc[[1]] <- quote( eval.parent)
+eval.parent( mc)
+}
+
+
+".local.return" <-
+function(...){
+r"--{
+This is a copy of 'debug:::debug.local.return', to get around a problem with 'reclasso' inside 'mvbutils::mlocal', ie 
+
+locfun <- function( nlocal=sys.parent()) mlocal( reclasso( by=<...>, { 
+  ...; 
+  return( local.return( ...)) # OK without RTMB, but not with it
+}))
+
+which doesn't work; it tries to assign 'override.answer' into 'baseenv()', which is clearly not what's supposed to happen! So 'reclasso.advector' now substitutes this function in place of calls to 'local.return'.
+
+I suspect the whole return-value stuff in 'mlocal' needs an overhaul (it's over 20 years old...) but this will do for now!
+
+Almost the same as local.return(), but searches in a different way for where to put 'override.answer', cos the eval( enclos) trick in local.return doesn't work inside debugger in R4.1 (not sure when that problem started). That trick relies on parent.frame(2) working OK, and might be delicate anyway;  this code should be more robust, in general, even outside debug.
+}--"
+
+  orig.mc <- mc <- as.list( match.call())[ -1]
+
+  if( length( mc)) {
+    if( length( mc)==1)
+      mc <- eval( mc[[1]], envir=parent.frame())
+    else { # multiple arguments, so return as named list
+      if( is.null( names( mc)))
+        which <- 1:length( mc)
+      else
+        which <- names( mc)==''
+
+      for( i in index( which))
+        if( is.symbol( orig.mc[[ i]]))
+          names( mc)[ i] <- as.character( orig.mc[[ i]] )
+      mc <- lapply( mc, eval, envir=parent.frame())
+    }
+  }
+
+  # Find the mlocal() frame that called me
+  # enclos <- parent.frame( 2)$enclos # non-mtraced version; the problem is, what should 2 be when debugging?
+  # Instead, look for it...
+  lastpf <- .GlobalEnv
+  pfgen <- 1
+  repeat{
+    pf <- parent.frame( pfgen)
+    if( identical( pf, lastpf)){
+stop( "Could not find my mlocal caller :(")
+    }
+    if( exists( '_ENCLOS_', pf, mode='environment', inherits=FALSE)){
+      # scatn( 'mlocal found at gen %i', pfgen)
+      enclos <- pf$'_ENCLOS_'
+      # print( head( lsall( enclos)))
+  break
+    }
+    pfgen <- pfgen + 1
+    lastpf <- pf
+  }
+
+  
+  assign( 'override.answer', mc, envir=enclos)
+}
+
+
 ".Oatan2" <-
 function( e1, e2) Obinary( 'atan2', e1, e2, allow_unary=FALSE)
 
@@ -31,7 +113,10 @@ function( libname, pkgname){
     '/'= quote( offartmb:::.Odiv),
     '^'= quote( offartmb:::.Opow),
     'atan2'= quote( offartmb:::.Oatan2),
-    'REPORTO'= quote( offartmb:::.REPORTO)
+    'REPORTO'= quote( offartmb:::.REPORTO),
+    eval= quote( offartmb:::.eval),
+    eval.parent= quote( offartmb:::.eval.parent),
+    local.return= quote( offartmb:::.local.return)
   )
   
   # Could also call eg:
@@ -117,7 +202,9 @@ return( res)
 
 
 "reclasso.advector" <-
-function( expr, by, evalfr=parent.frame(), ...){
+function( expr, by, evalfr=parent.frame(), 
+    DNR=character(), .sub=TRUE, ...
+){
 ## Replace calls in expr to +,-,*,/,atan2, and any user-defined additions with 
 ## calls to offarray-compatible equivs (that will still honour advector)
 ## see .onLoad for default list
@@ -137,8 +224,8 @@ function( expr, by, evalfr=parent.frame(), ...){
   }--"
 
   subcall <- quote( substitute( x, y))
-  subcall[[2]] <- substitute( expr)
-  subcall[[3]] <- overloads$repops
+  subcall[[2]] <- if( .sub) substitute( expr) else expr
+  subcall[[3]] <- overloads$repops %without.name% DNR
   expr <- eval( subcall) 
 
   # or if I had the user-tweakable version in place
@@ -184,8 +271,12 @@ function( expr, by, evalfr=parent.frame(), ...){
       assign( '[<-', newsuba, ff)
     } # if subass not re-replaced yet
   } # if need to re-replace subassignment
-  
-  eval( expr, evalfr)
+
+  if( .sub){
+return( eval( expr, evalfr))
+  } else {
+return( expr)
+  }
 }
 
 
