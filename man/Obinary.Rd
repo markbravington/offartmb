@@ -1,18 +1,21 @@
 \name{Obinary}
 \alias{Obinary}
 \alias{define_repops}
+\alias{ADREPORTO}
 \alias{offartmb}
 \title{Overloading glue between offarray and other packages such as RTMB}
 \description{
-Package \pkg{offartmb} lets you use \code{offarray} code directly in package \pkg{RTMB}. All you have to do is:
+Package \pkg{offartmb} lets you use \code{offarray} code directly in package \pkg{RTMB}. All you need to do is:
 
 \itemize{
 \item make sure you have done \code{library( offartmb)} \emph{after} \code{library( offarray)}
-\item make sure the body of your objective function, and any hand-written sub-functions that is calls, is wrapped in a call to \code{\link{reclasso}} which is in package \pkg{offarray}. As its documentation says, there's no downside to doing that.
-\item make sure you use \code{REPORTO( thing_I_want_to_keep)} to preserve interesting variables computed inside your function (like REPORT() in TMB or indeed package \pkg{RTMB}).
+\item make sure that the body of your objective function, and any hand-written sub-functions that is calls, is wrapped in a call to \code{\link{reclasso}} which is in package \pkg{offarray}. As its documentation says, there's no downside to doing that.
+\item make sure you use \code{REPORTO(thing_I_want_to_keep)} to preserve interesting variables computed inside your function (like REPORT() in TMB or indeed package \pkg{RTMB}).
 }
 
 Then your function \code{myfun} will still run fine outside \code{RTMB}, but you should also be able to run \code{myfun_rtmb <- RTMB::MakeADFun( myfun, <paramvals>)} and everything will be copacetic thereafter.
+
+\code{ADREPORTO} replaces \code{ADREPORT}; it will preserve array structure, and can do multiple ojects at once. It has no effect except in \code{MakeADFun(...,ADreport=TRUE)}.
 }
 \details{
 You probably do not want to be reading this.
@@ -40,9 +43,10 @@ The basic trick for most operators is to remove the \code{offarray} class from t
 define_repops( ...)
 # You would never just Obinary on its own like this...
 Obinary(op, e1, e2, ..., allow_unary = FALSE)
+ADREPORTO( ...)
 }
 \arguments{
-\item{ ...}{in \code{define_repops}, a named list of replacement operator/functions and expressions to replace them with. The expressions normally need to be wrapped in \code{quote}--- you don't want \code{define_repops} itself to evaluate them. See \code{offartmb:::.onLoad} for example. If empty, the current repops will be returned. In \code{Obinary}, \code{...} can contain additional arguments for \code{op}, which will be passed to it unchanged. This is not meaningful for pure operators such as "*", but conceivably useful for eg statistical distributions where the mean, or mean-and-variance, might be S4; often the user might want to pass an extra argument such as "log=FALSE" or "df=5".}
+\item{ ...}{in \code{define_repops}, a named list of replacement operator/functions and expressions to replace them with. The expressions normally need to be wrapped in \code{quote}--- you don't want \code{define_repops} itself to evaluate them. See \code{offartmb:::.onLoad} for example. If empty, the current repops will be returned. In \code{Obinary}, \code{...} can contain additional arguments for \code{op}, which will be passed to it unchanged. This is not meaningful for pure operators such as "*", but conceivably useful for eg statistical distributions where the mean, or mean-and-variance, might be S4; often the user might want to pass an extra argument such as "log=FALSE" or "df=5". In \code{ADREPORTO}, each argument is either the name of a variable, or a \code{x=y+z} kinda thing which will result in \code{x<-y+z;ADREPORT(x)}. This lets you create stuff on-the-fly for \code{ADREPORT} purposes only.}
 \item{ op}{Name of an "operator". Usually eg "+" or similar but potentially any function which should dispatch based on its first two arguments.}
 \item{ e1, e2}{Arguments whose class to dispatch on}
 \item{ allow_unary}{A few functions, such as "-", have a legitimate unary variant; \code{-x} makes sense on its own, whereas \code{*x} doesn't.}

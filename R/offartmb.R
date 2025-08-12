@@ -1,5 +1,26 @@
 # This is package offartmb 
 
+".ADREPORTO" <-
+function(...){
+  dots <- match.call( expand.dots=FALSE)$...
+
+  # Allow auto-creation, eg sqrt_Prob_x= sqrt( Prob_x)  
+  namdots <- names( dots) %||% rep( '', length( dots))
+stopifnot( all( nzchar( namdots) | sapply( dots, is.name)))
+  
+  for( ivar in seq_along( dots)){
+    if( nzchar( namdots[ ivar])){ # create this var
+      eval.parent( call( 'assign', namdots[ ivar], dots[[ ivar]]))
+    } else {
+      namdots[ ivar] <- as.character( dots[[ ivar]])
+    }
+    
+    eval.parent( call( 'ADREPORT', as.name( namdots[ ivar])))
+  }
+return( NULL)
+}
+
+
 ".eval" <-
 function( expr, ...){
   mc <- match.call( expand.dots=TRUE)
@@ -114,6 +135,7 @@ function( libname, pkgname){
     '^'= quote( offartmb:::.Opow),
     'atan2'= quote( offartmb:::.Oatan2),
     'REPORTO'= quote( offartmb:::.REPORTO),
+    'ADREPORTO'= quote( offartmb:::.ADREPORTO),
     eval= quote( offartmb:::.eval),
     eval.parent= quote( offartmb:::.eval.parent),
     local.return= quote( offartmb:::.local.return)
@@ -144,6 +166,12 @@ stopifnot( all( sapply( dots, is.name)))
   
   for( v in names) eval.parent( call( 'REPORT', as.name( v)))
 return( NULL)
+}
+
+
+"ADREPORTO" <-
+function( ...){
+  # Does nothing; substituted with "real deal" by reclasso.advector() etc
 }
 
 
