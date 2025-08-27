@@ -9,13 +9,31 @@ function(...){
 stopifnot( all( nzchar( namdots) | sapply( dots, is.name)))
   
   for( ivar in seq_along( dots)){
-    if( nzchar( namdots[ ivar])){ # create this var
-      eval.parent( call( 'assign', namdots[ ivar], dots[[ ivar]]))
+    nami <- namdots[ ivar]
+    is_temp <- nzchar( nami)
+    if( is_temp){ # create this var
+      eval.parent( call( 'assign', nami, dots[[ ivar]]))
     } else {
-      namdots[ ivar] <- as.character( dots[[ ivar]])
+      nami <- as.character( dots[[ ivar]])
+    }
+
+    thingi <- get( nami, envir=parent.frame())
+    uncheat <- thingi %is.an% 'offarray'
+    if( uncheat){
+      dd <- old_dd <- dim( thingi)
+      attr(dd,'offset') <- firstel( thingi)
+      attr( dd, 'dn') <- dimnames( thingi)
+      dim( thingi) <- dd
+      eval.parent( call( 'assign', nami, thingi))
     }
     
-    eval.parent( call( 'ADREPORT', as.name( namdots[ ivar])))
+    eval.parent( call( 'ADREPORT', as.name( nami)))
+    if( is_temp){
+      rm( list=nami, envir=parent.frame())
+    } else if( uncheat){
+      dim( thingi) <- old_dd
+      eval.parent( call( 'assign', nami, thingi))
+    }
   }
 return( NULL)
 }
@@ -305,6 +323,45 @@ return( eval( expr, evalfr))
   } else {
 return( expr)
   }
+}
+
+
+"reconstruct_offarray" <-
+function( adobj, pars){
+  adr <- adobj$env$ADreportDims
+  if( !length( adr)){
+warning( "No ADreport stuff found")
+return()
+  }
+  
+  npar <- length( pars)
+  D <- adobj$gr( pars)
+  starty <- 0
+  for( iadr in names( adr)){
+    dimmy <- adr[[ iadr]]
+    lenny <- prod( dimmy)
+    offi <- dimmy@offset
+    dni <- dimmy@dn
+    thisso <- D[ starty + seq_len( lenny),]
+    dimmy@offset <- dimmy@dn <- NULL
+    dim( thisso) <- c( dimmy, npar)
+    
+    if( !is.null( offi) && !is.null( dni)){
+      # then it's an offarray
+      thisso@offset <- offi
+      if( !is.null( dni)){
+        dimnames( thisso) <- c( dni, list( NULL))
+      }
+    }
+    
+    assign( iadr, thisso, envir=adobj$env$ADreport)
+    starty <- starty + lenny
+  }
+  
+  # Changes will happen automatically inside adobj, "thanks" to environments
+  # So just return something...
+  
+return( names( adr))
 }
 
 
